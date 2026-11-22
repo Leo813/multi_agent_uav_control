@@ -1,0 +1,86 @@
+# Multi-Agent UAV Control Project
+
+Independent PyTorch PPO and MAPPO for quadcopter navigation and stable hovering
+under wind disturbances, using NVIDIA Isaac Lab for GPU-parallel simulation.
+
+**Status:** repository foundation only. Training algorithms, task migration, and
+simulator integration are not implemented or validated yet.
+
+## Research objective
+
+The project will compare two ways to control one quadcopter:
+
+- **SARL / PPO:** one policy commands collective thrust and three control moments.
+- **MARL / MAPPO:** separate Translation and Yaw policies cooperate on the same
+  quadcopter, with centralized value estimation during training and decentralized
+  policy execution.
+
+The original task definitions and skrl configurations in
+[YuHaoTsai/IsaacLab](https://github.com/YuHaoTsai/IsaacLab/tree/main/source/isaaclab_tasks/isaaclab_tasks/direct/quadcopter_MARL)
+are the starting references, especially `quadcopter_SARL.py` and
+`quadcopter_MARL.py`. The draft paper provides research context; new training and
+evaluation results will be generated for this implementation.
+
+## Intended architecture
+
+- **Learning:** simulator-independent PyTorch modules for configurable networks,
+  Gaussian policies, PPO/MAPPO updates, GAE, rollout storage, normalization, and
+  learning-rate schedules.
+- **Integration:** a small adapter for Isaac Lab's `DirectRLEnv` and
+  `DirectMARLEnv` tensor interfaces, including per-agent observations, centralized
+  critic inputs, termination, truncation, and reset behavior.
+- **Workflow:** training, checkpoint/resume, and evaluation procedures composed
+  around the learning modules and environment adapter.
+
+Isaac Lab and Isaac Sim own physics and simulation parallelism. The learning
+code will not depend on skrl, RL-Games, or RSL-RL. Existing UAV task behavior will
+be preserved, with changes limited to necessary integration and runtime fixes.
+
+This separation follows the broad approach in
+[hexapod_proj](https://github.com/Leo813/hexapod_proj/blob/main/docs/ppo-implementation.md),
+with interfaces and learning behavior designed for Isaac Lab and the UAV tasks.
+
+## Package and compatibility target
+
+- Distribution: `multi-agent-uav-control`; Python import: `uav_control`.
+- Python 3.10 or newer for the package foundation.
+- Initial simulation target: Isaac Lab 2.1.0, Isaac Sim 4.5.0, and Python 3.10.
+- Primary development platform: Windows 11; secondary target: Ubuntu.
+
+Install Isaac Lab and Isaac Sim separately when simulation work begins, following
+the [versioned installation guide](https://isaac-sim.github.io/IsaacLab/v2.1.0/source/setup/installation/pip_installation.html).
+This repository is an external project and does not modify NVIDIA's framework.
+The official external-project template is a compatibility reference; this
+package uses a flat layout and a root-level `pyproject.toml`.
+
+The foundation declares no runtime dependencies. PyTorch and simulator
+requirements will be added deliberately when their components are implemented.
+An editable installation, when needed, uses:
+
+```console
+python -m pip install -e .
+```
+
+This installs the package, not the Isaac stack. The build backend is setuptools.
+From the repository root, a dependency-free source import check is:
+
+```console
+python -B -c "import uav_control; print(uav_control.__file__)"
+```
+
+## Development sequence
+
+1. Establish the package foundation.
+2. Implement and numerically verify independent PPO components.
+3. Extend them to two-policy MAPPO with centralized value estimation.
+4. Verify training and evaluation with lightweight vectorized mock environments.
+5. Integrate the existing UAV tasks through minimal compatibility code.
+6. Run real Isaac Lab simulation, CUDA training, and evaluation.
+7. Review task refinements and experimental procedures.
+
+Static checks, deterministic numerical tests, and mock-environment tests precede
+simulator testing. Passing software tests is not evidence of simulation
+compatibility or research performance. See [AGENTS.md](AGENTS.md) for development
+constraints and verification expectations.
+
+License selection is pending review.
