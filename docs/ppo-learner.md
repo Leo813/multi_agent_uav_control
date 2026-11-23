@@ -175,17 +175,21 @@ RL-Games objective, hyperparameters, and timeout conventions were not adopted.
 ## Verification and deferred integration
 
 On Windows, Python 3.10.11 / PyTorch 2.5.1+cpu / pytest 8.4.2:
-`.venv\Scripts\python.exe -B -m pytest -q` passes **127 tests** (70 existing,
-57 added). Tests include analytic gradients, a hand-calculated first Adam step,
+the Milestone 3 baseline passed **127 tests** (70 mathematical-foundation tests,
+57 learner tests). Run `.venv\Scripts\python.exe -B -m pytest -q` for the full
+current suite, including [MAPPO checks](mappo-learner.md#verification-and-remaining-integration).
+PPO tests include analytic gradients, a hand-calculated first Adam step,
 known running moments and GAE targets, clipping-center regression, zero-update
 behavior, detached storage/targets, minibatch coverage, schedule boundaries, and
 synthetic consecutive rollouts with normalization/shuffling enabled or disabled.
 PyTorch emits one warning because optional NumPy is absent; no test uses NumPy.
 
 Network configuration, distributions, GAE/loss functions, owned storage,
-normalizers, and the schedule are reusable for future MAPPO. Per-policy routing
-and centralized critic observations still need explicit interfaces; the current
-actor and critic consume the same observation input.
+normalizers, and the schedule are reused by the [MAPPO learner](mappo-learner.md).
+The single-agent learner retains its original local observation input. Network
+configuration now also supports explicit centralized critic dimensions and
+independent critic widths when `shared=False`. PPO and MAPPO call the same target
+preparation and optimization helpers; the mathematical functions are unchanged.
 
 Deferred: verify Isaac Lab 2.1.0 action transformations, reset timing and final
 observation availability; implement the adapter, collector and lifecycle; add

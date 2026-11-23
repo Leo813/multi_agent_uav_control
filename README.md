@@ -3,14 +3,16 @@
 Independent PyTorch PPO and MAPPO for quadcopter navigation and stable hovering
 under wind disturbances, using NVIDIA Isaac Lab for GPU-parallel simulation.
 
-**Status:** A simulator-independent single-agent PPO learner is implemented with
-configurable actor-critic networks, owned rollout storage, normalization, Adam
-updates, and KL-adaptive learning rates. Numerical tests cover synthetic rollout
-updates. Environment-driven training, MAPPO, task migration, and simulator
-integration are not implemented or validated yet.
+**Status:** Simulator-independent PPO and two-agent MAPPO learners are implemented
+with configurable networks, owned rollout storage, normalization, Adam updates,
+and KL-adaptive learning rates. MAPPO uses separate Translation/Yaw actors and
+centralized critics. Numerical tests cover synthetic rollout updates.
+Environment-driven training, task migration, and simulator integration are not
+implemented or validated yet.
 
-See [PPO learner](docs/ppo-learner.md) for configuration, collection/update
-interfaces, normalization choices, and validation results. The underlying
+See [PPO learner](docs/ppo-learner.md) and [MAPPO learner](docs/mappo-learner.md)
+for configuration, collection/update interfaces, normalization choices, and
+validation results. The underlying
 [PPO mathematical foundations](docs/ppo-core.md) specify action likelihoods,
 boundary semantics, and loss conventions.
 
@@ -81,8 +83,8 @@ python -B -c "import uav_control; print(uav_control.__file__)"
 
 1. Establish the package foundation.
 2. Implement and numerically verify independent PPO components.
-3. Compose and verify the single-agent PPO learner (current milestone).
-4. Extend to two-policy MAPPO with centralized value estimation.
+3. Compose and verify the single-agent PPO learner.
+4. Extend to two-policy MAPPO with centralized value estimation (current milestone).
 5. Verify training and evaluation with lightweight vectorized mock environments.
 6. Integrate the existing UAV tasks through minimal compatibility code.
 7. Run real Isaac Lab simulation, CUDA training, and evaluation.

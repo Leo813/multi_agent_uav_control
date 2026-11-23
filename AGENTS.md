@@ -92,14 +92,20 @@ corresponding execution has been tested. Report commands, results, and untested
 parts; keep documentation concise and focused on implemented functionality and
 the next milestone.
 
-## Current PPO learner milestone and review boundaries
+## Current MAPPO learner milestone and review boundaries
 
-Milestone 3 composes the existing Gaussian distributions, GAE/returns, and PPO
-losses into a single-agent learner. Networks, rollout storage, running statistics,
-and optimization stay in focused modules directly under `uav_control/`. Validate
-with deterministic numerical and synthetic rollout tests. Do not add adapters,
-environment-driven training loops, MAPPO, configuration pipelines, checkpointing,
-simulation evaluation, or migrate tasks during this milestone.
+Milestone 4 extends PPO to Translation/Yaw MAPPO with centralized training and
+decentralized execution. Keep separate local actors and agent-specific critics,
+rewards, advantages, optimizers, and value statistics. Default local/action
+dimensions are 21/4 and 9/1; both critics use the 30-dimensional state in
+Translation-then-Yaw order. Action selection must work without centralized states
+or another agent's observations.
+
+Reuse Gaussian, GAE, loss, normalization, and optimization code; preserve PPO
+interfaces and regression tests. Verify synchronized owned storage and independent
+learning signals using deterministic synthetic rollouts. Keep modules flat under
+`uav_control/`. Do not add adapters, environment collection loops, launchers,
+checkpointing/logging infrastructure, simulation evaluation, or migrate tasks.
 
 Request approval before installing packages. Use an ignored repository-local
 `.venv` for CPU tests; never modify existing Python/Conda environments, CUDA,
@@ -111,14 +117,15 @@ Document raw policy actions separately from executed actions. Keep GAE boundary
 semantics explicit and require final pre-reset values for optional truncation
 bootstrapping. Follow the documented skrl prediction-clipping value loss rather
 than importing the Hexapod implementation's maximum-of-two-errors convention.
-The public contracts and reference revisions are in `docs/ppo-core.md` and
-`docs/ppo-learner.md`. Collect raw observations, raw action samples, and raw
-rewards; the learner scales rewards once. Both normalizers stay frozen through
-collection and optimization, then update once for the next rollout. Prepared
-targets remain fixed; preserve the documented differences from skrl when changing
+The public contracts and reference revisions are in `docs/ppo-core.md`,
+`docs/ppo-learner.md`, and `docs/mappo-learner.md`. Collect raw observations,
+centralized states, raw action samples, and individual raw rewards; the learner
+scales rewards once. Local-observation, centralized-state, and value normalizers
+stay frozen through collection and optimization, then update once for the next
+rollout. Prepared targets remain fixed; preserve the documented differences from skrl when changing
 normalization or minibatch behavior.
 
-Implement this milestone on `feature/ppo-learner`, created from clean, updated `main`.
+Implement this milestone on `feature/mappo-learner`, created from clean, updated `main`.
 Stop after implementation, verification, and reporting; leave changes uncommitted
 for review.
 
