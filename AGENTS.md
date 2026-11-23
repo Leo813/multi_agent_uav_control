@@ -92,20 +92,31 @@ corresponding execution has been tested. Report commands, results, and untested
 parts; keep documentation concise and focused on implemented functionality and
 the next milestone.
 
-## Current MAPPO learner milestone and review boundaries
+## Current training-workflow milestone and review boundaries
 
-Milestone 4 extends PPO to Translation/Yaw MAPPO with centralized training and
-decentralized execution. Keep separate local actors and agent-specific critics,
-rewards, advantages, optimizers, and value statistics. Default local/action
-dimensions are 21/4 and 9/1; both critics use the 30-dimensional state in
-Translation-then-Yaw order. Action selection must work without centralized states
-or another agent's observations.
+Milestone 5 adds tensor environment contracts, persistent PPO/MAPPO collectors,
+bounded training, checkpoint/resume, and deterministic evaluation. Keep mock
+environments and the mock CLI under `dev/`, outside the installed learning package.
+Mocks verify workflow semantics; they do not model UAV physics or replace Isaac Lab.
 
-Reuse Gaussian, GAE, loss, normalization, and optimization code; preserve PPO
-interfaces and regression tests. Verify synchronized owned storage and independent
-learning signals using deterministic synthetic rollouts. Keep modules flat under
-`uav_control/`. Do not add adapters, environment collection loops, launchers,
-checkpointing/logging infrastructure, simulation evaluation, or migrate tasks.
+Reuse existing learners without duplicating PPO/MAPPO calculations. Preserve all
+151 pre-workflow tests and independent Translation/Yaw learning signals. Actions
+sent to environments must be independent copies; retain raw samples for PPO.
+The adapter contract returns next-action-ready observations, with separate final
+pre-reset observations/states and validity masks for timeout bootstrapping.
+Never infer native Isaac Lab reset timing from the mock or from Isaac Gym.
+
+Track completed updates, vector steps, and system transitions (N per vector
+step, also for MAPPO). Checkpoint only at complete update boundaries. Distinguish
+restored learner state from exact interaction continuation, which additionally
+requires environment state, current observations, episode meters, and RNGs.
+Use versioned data-only checkpoints, explicit device mapping, and restricted
+loading for trusted local artifacts. Verify actual optimization/interaction state
+after resume. Evaluation must freeze weights, optimizers, and normalizers.
+
+Keep workflow modules flat under `uav_control/`. Do not implement the real Isaac
+Lab adapter/launcher, migrate tasks, add simulator dependencies, distributed
+training, mixed precision, or research experiments during this milestone.
 
 Request approval before installing packages. Use an ignored repository-local
 `.venv` for CPU tests; never modify existing Python/Conda environments, CUDA,
@@ -118,14 +129,14 @@ semantics explicit and require final pre-reset values for optional truncation
 bootstrapping. Follow the documented skrl prediction-clipping value loss rather
 than importing the Hexapod implementation's maximum-of-two-errors convention.
 The public contracts and reference revisions are in `docs/ppo-core.md`,
-`docs/ppo-learner.md`, and `docs/mappo-learner.md`. Collect raw observations,
+`docs/ppo-learner.md`, `docs/mappo-learner.md`, and `docs/training-workflow.md`. Collect raw observations,
 centralized states, raw action samples, and individual raw rewards; the learner
 scales rewards once. Local-observation, centralized-state, and value normalizers
 stay frozen through collection and optimization, then update once for the next
 rollout. Prepared targets remain fixed; preserve the documented differences from skrl when changing
 normalization or minibatch behavior.
 
-Implement this milestone on `feature/mappo-learner`, created from clean, updated `main`.
+Implement this milestone on `feature/training-workflow`, created from clean, updated `main`.
 Stop after implementation, verification, and reporting; leave changes uncommitted
 for review.
 

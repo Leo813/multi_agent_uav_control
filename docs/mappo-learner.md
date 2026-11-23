@@ -142,7 +142,7 @@ mixed precision, or distributed execution is implemented.
 
 ## Verification and remaining integration
 
-On Windows, `.venv\Scripts\python.exe -B -m pytest -q` passed **151 tests**:
+The Milestone 4 baseline passed **151 tests** on Windows:
 127 existing PPO regressions and 24 new MAPPO tests. Numerical checks cover
 different agent dimensions/rewards/boundaries, decentralized execution,
 actor/critic gradient isolation, analytic Gaussian likelihoods and Adam steps,
@@ -160,7 +160,7 @@ bootstrapping needs each critic evaluated on the final centralized state before
 reset; post-reset values are invalid. Termination overrides truncation. Keep
 bootstrapping disabled if final states are unavailable. See [GAE](ppo-core.md#gae-and-episode-boundaries).
 
-Task migration, autoreset/final-state extraction, action execution transforms,
-collection/lifecycle, persistence, and evaluation remain deferred. CUDA, Ubuntu,
-Isaac Lab/Sim execution, environment-driven learning, and research performance
-are untested; CPU numerical checks establish software behavior only.
+The [training workflow](training-workflow.md) now supplies collection/lifecycle,
+persistence, and evaluation verified against CPU mocks. Task migration, real
+autoreset/final-state extraction, and execution transforms remain deferred.
+CUDA, Ubuntu, Isaac Lab/Sim execution, and research performance remain untested.

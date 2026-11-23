@@ -3,16 +3,16 @@
 Independent PyTorch PPO and MAPPO for quadcopter navigation and stable hovering
 under wind disturbances, using NVIDIA Isaac Lab for GPU-parallel simulation.
 
-**Status:** Simulator-independent PPO and two-agent MAPPO learners are implemented
-with configurable networks, owned rollout storage, normalization, Adam updates,
-and KL-adaptive learning rates. MAPPO uses separate Translation/Yaw actors and
-centralized critics. Numerical tests cover synthetic rollout updates.
-Environment-driven training, task migration, and simulator integration are not
-implemented or validated yet.
+**Status:** Independent PPO and two-agent MAPPO support persistent rollout
+collection, bounded training, checkpoint/resume, and deterministic evaluation.
+CPU mock environments verify the workflow end to end. MAPPO retains separate
+Translation/Yaw actors and centralized critics. UAV task migration, Isaac Lab
+integration, CUDA execution, and research performance remain unvalidated.
 
 See [PPO learner](docs/ppo-learner.md) and [MAPPO learner](docs/mappo-learner.md)
 for configuration, collection/update interfaces, normalization choices, and
-validation results. The underlying
+validation results. See [training workflow](docs/training-workflow.md) for the
+environment contract, checkpoint semantics, and mock verification. The underlying
 [PPO mathematical foundations](docs/ppo-core.md) specify action likelihoods,
 boundary semantics, and loss conventions.
 
@@ -84,8 +84,8 @@ python -B -c "import uav_control; print(uav_control.__file__)"
 1. Establish the package foundation.
 2. Implement and numerically verify independent PPO components.
 3. Compose and verify the single-agent PPO learner.
-4. Extend to two-policy MAPPO with centralized value estimation (current milestone).
-5. Verify training and evaluation with lightweight vectorized mock environments.
+4. Extend to two-policy MAPPO with centralized value estimation.
+5. Verify training and evaluation with lightweight vectorized mock environments (current milestone).
 6. Integrate the existing UAV tasks through minimal compatibility code.
 7. Run real Isaac Lab simulation, CUDA training, and evaluation.
 8. Review task refinements and experimental procedures.
@@ -96,3 +96,23 @@ compatibility or research performance. See [AGENTS.md](AGENTS.md) for developmen
 constraints and verification expectations.
 
 License selection is pending review.
+
+## Mock workflow verification
+
+These CPU commands run from the repository root using the existing `.venv`.
+They are **not Isaac Lab UAV training commands**. Use `--help` for options.
+
+```powershell
+.venv\Scripts\python.exe -m dev.mock_workflow --algorithm ppo --num-envs 4 --updates 2 --checkpoint outputs/mock/ppo.pt
+.venv\Scripts\python.exe -m dev.mock_workflow --algorithm ppo --num-envs 4 --updates 1 --resume outputs/mock/ppo.pt --exact-resume
+.venv\Scripts\python.exe -m dev.mock_workflow --algorithm ppo --evaluate --resume outputs/mock/ppo.pt --eval-steps 20
+.venv\Scripts\python.exe -m dev.mock_workflow --algorithm mappo --num-envs 4 --updates 2 --checkpoint outputs/mock/mappo.pt
+.venv\Scripts\python.exe -m dev.mock_workflow --algorithm mappo --evaluate --resume outputs/mock/mappo.pt --eval-steps 20
+```
+
+`--updates` adds complete updates. Output reports vector steps and transitions;
+one vector step with N environments is N transitions, including MAPPO.
+`--exact-resume` restores mock interaction state and requires matching environment
+configuration. Without it, a restored learner starts a fresh environment while
+retaining training counters. Load only trusted project-generated checkpoints.
+Generated outputs are ignored by Git; `dev/` is not an installed simulation dependency.

@@ -191,9 +191,8 @@ configuration now also supports explicit centralized critic dimensions and
 independent critic widths when `shared=False`. PPO and MAPPO call the same target
 preparation and optimization helpers; the mathematical functions are unchanged.
 
-Deferred: verify Isaac Lab 2.1.0 action transformations, reset timing and final
-observation availability; implement the adapter, collector and lifecycle; add
-checkpoint/resume and evaluation; preserve original UAV task definitions. CUDA,
-Isaac Lab/Sim execution, Ubuntu, environment-driven learning, and research
-performance have not been tested. CPU numerical checks establish software
-behavior only.
+The [training workflow](training-workflow.md) adds collection, lifecycle,
+checkpoint/resume, and evaluation verified with CPU mocks. Deferred: verify
+Isaac Lab 2.1.0 action transformations, reset timing and final observations;
+implement the adapter and preserve original UAV tasks. CUDA, Isaac Lab/Sim,
+Ubuntu, and research performance remain untested.
