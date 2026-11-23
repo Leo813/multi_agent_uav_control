@@ -9,7 +9,7 @@ from .advantages import generalized_advantage_estimate
 from .losses import ppo_loss
 from .networks import ActorCritic, PolicyStep
 from .normalization import RunningNormalizer, normalize_advantages
-from .rollout import RolloutBuffer, minibatch_indices
+from .rollout import Rollout, RolloutBuffer, minibatch_indices
 from .schedules import adaptive_learning_rate
 
 
@@ -120,6 +120,8 @@ class PPOLearner:
     """
 
     def __init__(self, model: ActorCritic, config: PPOConfig | None = None):
+        if model.config.critic_observation_dim is not None:
+            raise ValueError("Use MAPPOLearner for centralized critic inputs")
         self.model, self.config = model, config or PPOConfig()
         self.device, self.dtype = model.log_std.device, model.log_std.dtype
         if self.dtype not in (torch.float32, torch.float64):
@@ -191,26 +193,7 @@ class PPOLearner:
         rollout = buffer.snapshot()
         if rollout.observations.device != self.device or rollout.observations.dtype != self.dtype:
             raise ValueError("Rollout must match learner dtype and device")
-        c = self.config
-        targets = generalized_advantage_estimate(
-            rollout.rewards * c.reward_scale, rollout.values, rollout.terminated, rollout.truncated,
-            next_values=rollout.next_values, truncation_values=rollout.truncation_values,
-            gamma=c.gamma, gae_lambda=c.gae_lambda, bootstrap_truncations=c.bootstrap_truncations,
-        )
-        advantages = (normalize_advantages(targets.advantages, epsilon=c.normalization_epsilon)
-                      if c.normalize_advantages
-                      else targets.advantages)
-        raw = rollout.observations.reshape(size, -1)
-        observations = self._observations(raw).clone()
-        returns, old_values = targets.returns, rollout.values
-        reward_returns = returns.reshape(size).clone()
-        if self.value_normalizer is not None:
-            # Keep collection coordinates, including the critic clipping center.
-            returns = self.value_normalizer.normalize(returns.unsqueeze(-1)).squeeze(-1)
-            old_values = self.value_normalizer.normalize(old_values.unsqueeze(-1)).squeeze(-1)
-        batch = PPOBatch(observations, raw, rollout.actions.reshape(size, -1),
-                         rollout.log_probs.reshape(size), old_values.reshape(size),
-                         advantages.reshape(size), returns.reshape(size), reward_returns)
+        batch = _prepare_ppo_batch(rollout, self.config, self.observation_normalizer, self.value_normalizer)
         buffer.prepared = True
         self._pending = batch
         return batch
@@ -225,47 +208,81 @@ class PPOLearner:
         if batch is not self._pending:
             raise ValueError("Batch must be this learner's pending, unconsumed batch")
         self._pending = None  # Consume before any optimizer step; no silent retries.
-        c = self.config
-        size = batch.advantages.numel()
-        totals = torch.zeros(7, device=self.device, dtype=torch.float64)
-        steps = 0
-        for _ in range(c.learning_epochs):
-            epoch_kl = torch.zeros((), device=self.device, dtype=torch.float64)
-            for indices in minibatch_indices(size, c.mini_batches, device=self.device,
-                                              shuffle=c.shuffle_minibatches, generator=generator):
-                current = self.model.evaluate_actions(batch.observations[indices], batch.actions[indices])
-                losses = ppo_loss(
-                    current.log_probs, batch.old_log_probs[indices], batch.advantages[indices],
-                    current.values, batch.returns[indices], old_values=batch.old_values[indices],
-                    entropy=current.entropy, ratio_clip=c.ratio_clip, value_clip=c.value_clip,
-                    value_coefficient=c.value_coefficient, entropy_coefficient=c.entropy_coefficient,
-                )
-                self.optimizer.zero_grad(set_to_none=True)
-                losses.total.backward()
-                grad_norm = torch.nn.utils.clip_grad_norm_(self.model.parameters(), c.max_grad_norm,
-                                                          error_if_nonfinite=True)
-                self.optimizer.step()
-                with torch.no_grad():
-                    totals += torch.stack((losses.total, losses.policy, losses.value, losses.entropy_loss,
-                                           losses.approx_kl, losses.clip_fraction, grad_norm)).detach()
-                    epoch_kl += losses.approx_kl
-                steps += 1
-            if c.adaptive_lr:
-                rate = adaptive_learning_rate(
-                    self.optimizer.param_groups[0]["lr"], max(0.0, (epoch_kl / c.mini_batches).item()),
-                    threshold=c.kl_threshold, min_lr=c.min_lr, max_lr=c.max_lr,
-                    kl_factor=c.kl_factor, lr_factor=c.lr_factor,
-                )
-                for group in self.optimizer.param_groups:
-                    group["lr"] = rate
-        for parameter in self.model.parameters():
-            finite(parameter, "updated model parameters")
+        report = _optimize_ppo(self.model, self.optimizer, batch, self.config, generator=generator)
         if self.observation_normalizer is not None:
             # Only future rollouts see these new statistics.
             self.observation_normalizer.update(batch.raw_observations)
         if self.value_normalizer is not None:
             self.value_normalizer.update(batch.reward_returns.unsqueeze(-1))
-        return UpdateDiagnostics(*(totals / steps).tolist(), self.optimizer.param_groups[0]["lr"], steps, size)
+        return report
 
     def update(self, buffer: RolloutBuffer, *, generator: torch.Generator | None = None) -> UpdateDiagnostics:
         return self.optimize(self.prepare_batch(buffer), generator=generator)
+
+
+@torch.no_grad()
+def _prepare_ppo_batch(rollout: Rollout, c: PPOConfig,
+                       observation_normalizer: RunningNormalizer | None,
+                       value_normalizer: RunningNormalizer | None) -> PPOBatch:
+    """Shared PPO/MAPPO target preparation from an owned rollout snapshot."""
+    size = rollout.rewards.numel()
+    targets = generalized_advantage_estimate(
+        rollout.rewards * c.reward_scale, rollout.values, rollout.terminated, rollout.truncated,
+        next_values=rollout.next_values, truncation_values=rollout.truncation_values,
+        gamma=c.gamma, gae_lambda=c.gae_lambda, bootstrap_truncations=c.bootstrap_truncations,
+    )
+    advantages = (normalize_advantages(targets.advantages, epsilon=c.normalization_epsilon)
+                  if c.normalize_advantages else targets.advantages)
+    raw = rollout.observations.reshape(size, -1)
+    observations = (observation_normalizer.normalize(raw) if observation_normalizer is not None else raw).clone()
+    returns, old_values = targets.returns, rollout.values
+    reward_returns = returns.reshape(size).clone()
+    if value_normalizer is not None:
+        returns = value_normalizer.normalize(returns.unsqueeze(-1)).squeeze(-1)
+        old_values = value_normalizer.normalize(old_values.unsqueeze(-1)).squeeze(-1)
+    return PPOBatch(observations, raw, rollout.actions.reshape(size, -1),
+                    rollout.log_probs.reshape(size), old_values.reshape(size),
+                    advantages.reshape(size), returns.reshape(size), reward_returns)
+
+
+def _optimize_ppo(model: ActorCritic, optimizer: torch.optim.Optimizer, batch: PPOBatch,
+                  c: PPOConfig, *, critic_states: torch.Tensor | None = None,
+                  generator: torch.Generator | None = None) -> UpdateDiagnostics:
+    """One shared update implementation; caller owns lifecycle and statistics."""
+    device = batch.observations.device
+    size = batch.advantages.numel()
+    totals = torch.zeros(7, device=device, dtype=torch.float64)
+    steps = 0
+    for _ in range(c.learning_epochs):
+        epoch_kl = torch.zeros((), device=device, dtype=torch.float64)
+        for indices in minibatch_indices(size, c.mini_batches, device=device,
+                                          shuffle=c.shuffle_minibatches, generator=generator):
+            current = model.evaluate_actions(batch.observations[indices], batch.actions[indices],
+                                              critic_states=None if critic_states is None else critic_states[indices])
+            losses = ppo_loss(
+                current.log_probs, batch.old_log_probs[indices], batch.advantages[indices],
+                current.values, batch.returns[indices], old_values=batch.old_values[indices],
+                entropy=current.entropy, ratio_clip=c.ratio_clip, value_clip=c.value_clip,
+                value_coefficient=c.value_coefficient, entropy_coefficient=c.entropy_coefficient,
+            )
+            optimizer.zero_grad(set_to_none=True)
+            losses.total.backward()
+            grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), c.max_grad_norm,
+                                                      error_if_nonfinite=True)
+            optimizer.step()
+            with torch.no_grad():
+                totals += torch.stack((losses.total, losses.policy, losses.value, losses.entropy_loss,
+                                       losses.approx_kl, losses.clip_fraction, grad_norm)).detach()
+                epoch_kl += losses.approx_kl
+            steps += 1
+        if c.adaptive_lr:
+            rate = adaptive_learning_rate(
+                optimizer.param_groups[0]["lr"], max(0.0, (epoch_kl / c.mini_batches).item()),
+                threshold=c.kl_threshold, min_lr=c.min_lr, max_lr=c.max_lr,
+                kl_factor=c.kl_factor, lr_factor=c.lr_factor,
+            )
+            for group in optimizer.param_groups:
+                group["lr"] = rate
+    for parameter in model.parameters():
+        finite(parameter, "updated model parameters")
+    return UpdateDiagnostics(*(totals / steps).tolist(), optimizer.param_groups[0]["lr"], steps, size)
