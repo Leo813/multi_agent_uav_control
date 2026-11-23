@@ -72,11 +72,12 @@ Work in reviewable milestones:
 
 1. Package and repository foundation.
 2. Independent PPO components with deterministic numerical checks.
-3. Two-policy MAPPO with centralized value estimation.
-4. Mock vectorized-environment training, checkpoint/resume, and evaluation.
-5. Minimal integration of the existing UAV tasks.
-6. Real simulator, CUDA training, and evaluation validation.
-7. Task refinements and experimental procedures.
+3. Single-agent PPO learner with synthetic rollout verification.
+4. Two-policy MAPPO with centralized value estimation.
+5. Mock vectorized-environment training, checkpoint/resume, and evaluation.
+6. Minimal integration of the existing UAV tasks.
+7. Real simulator, CUDA training, and evaluation validation.
+8. Task refinements and experimental procedures.
 
 Isaac Lab/Isaac Sim absence does not block simulator-independent development.
 Use static checks, deterministic numerical unit tests, and lightweight mock
@@ -91,12 +92,14 @@ corresponding execution has been tested. Report commands, results, and untested
 parts; keep documentation concise and focused on implemented functionality and
 the next milestone.
 
-## Current mathematical-foundations milestone and review boundaries
+## Current PPO learner milestone and review boundaries
 
-Milestone 2 implements only Gaussian distributions, GAE/returns, and PPO loss
-functions, with deterministic numerical tests. Keep these modules directly under
-`uav_control/`. Do not add networks, adapters, training loops, MAPPO, configuration
-pipelines, checkpointing, evaluation, or migrate tasks during this milestone.
+Milestone 3 composes the existing Gaussian distributions, GAE/returns, and PPO
+losses into a single-agent learner. Networks, rollout storage, running statistics,
+and optimization stay in focused modules directly under `uav_control/`. Validate
+with deterministic numerical and synthetic rollout tests. Do not add adapters,
+environment-driven training loops, MAPPO, configuration pipelines, checkpointing,
+simulation evaluation, or migrate tasks during this milestone.
 
 Request approval before installing packages. Use an ignored repository-local
 `.venv` for CPU tests; never modify existing Python/Conda environments, CUDA,
@@ -108,9 +111,14 @@ Document raw policy actions separately from executed actions. Keep GAE boundary
 semantics explicit and require final pre-reset values for optional truncation
 bootstrapping. Follow the documented skrl prediction-clipping value loss rather
 than importing the Hexapod implementation's maximum-of-two-errors convention.
-The public contracts and reference revisions are in `docs/ppo-core.md`.
+The public contracts and reference revisions are in `docs/ppo-core.md` and
+`docs/ppo-learner.md`. Collect raw observations, raw action samples, and raw
+rewards; the learner scales rewards once. Both normalizers stay frozen through
+collection and optimization, then update once for the next rollout. Prepared
+targets remain fixed; preserve the documented differences from skrl when changing
+normalization or minibatch behavior.
 
-Implement this milestone on `feature/ppo-core`, created from clean `main`.
+Implement this milestone on `feature/ppo-learner`, created from clean, updated `main`.
 Stop after implementation, verification, and reporting; leave changes uncommitted
 for review.
 

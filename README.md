@@ -3,12 +3,16 @@
 Independent PyTorch PPO and MAPPO for quadcopter navigation and stable hovering
 under wind disturbances, using NVIDIA Isaac Lab for GPU-parallel simulation.
 
-**Status:** Gaussian action distributions, batched GAE, and PPO loss functions
-are implemented with numerical unit tests. Training loops, task migration, and
-simulator integration are not implemented or validated yet.
+**Status:** A simulator-independent single-agent PPO learner is implemented with
+configurable actor-critic networks, owned rollout storage, normalization, Adam
+updates, and KL-adaptive learning rates. Numerical tests cover synthetic rollout
+updates. Environment-driven training, MAPPO, task migration, and simulator
+integration are not implemented or validated yet.
 
-See [PPO mathematical foundations](docs/ppo-core.md) for tensor interfaces,
-boundary semantics, and the skrl conventions used as references.
+See [PPO learner](docs/ppo-learner.md) for configuration, collection/update
+interfaces, normalization choices, and validation results. The underlying
+[PPO mathematical foundations](docs/ppo-core.md) specify action likelihoods,
+boundary semantics, and loss conventions.
 
 ## Research objective
 
@@ -57,7 +61,7 @@ This repository is an external project and does not modify NVIDIA's framework.
 The official external-project template is a compatibility reference; this
 package uses a flat layout and a root-level `pyproject.toml`.
 
-The mathematical modules require PyTorch 2.5.1. Install the appropriate PyTorch
+The learning modules require PyTorch 2.5.1. Install the appropriate PyTorch
 build first; CPU-only PyTorch is sufficient for the numerical tests. An editable
 installation with test dependencies, in a separately prepared environment, uses:
 
@@ -77,11 +81,12 @@ python -B -c "import uav_control; print(uav_control.__file__)"
 
 1. Establish the package foundation.
 2. Implement and numerically verify independent PPO components.
-3. Extend them to two-policy MAPPO with centralized value estimation.
-4. Verify training and evaluation with lightweight vectorized mock environments.
-5. Integrate the existing UAV tasks through minimal compatibility code.
-6. Run real Isaac Lab simulation, CUDA training, and evaluation.
-7. Review task refinements and experimental procedures.
+3. Compose and verify the single-agent PPO learner (current milestone).
+4. Extend to two-policy MAPPO with centralized value estimation.
+5. Verify training and evaluation with lightweight vectorized mock environments.
+6. Integrate the existing UAV tasks through minimal compatibility code.
+7. Run real Isaac Lab simulation, CUDA training, and evaluation.
+8. Review task refinements and experimental procedures.
 
 Static checks, deterministic numerical tests, and mock-environment tests precede
 simulator testing. Passing software tests is not evidence of simulation
