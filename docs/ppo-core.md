@@ -2,6 +2,8 @@
 
 These functions implement distribution and objective mathematics only. There
 are no networks, optimizer steps, rollout collectors, or simulator imports.
+The [single-agent PPO learner](ppo-learner.md) composes these functions with
+networks, storage, normalization, and optimizer steps.
 
 ## Interfaces
 
