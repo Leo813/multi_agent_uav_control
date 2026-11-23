@@ -91,15 +91,28 @@ corresponding execution has been tested. Report commands, results, and untested
 parts; keep documentation concise and focused on implemented functionality and
 the next milestone.
 
-## Current foundation milestone and review boundaries
+## Current mathematical-foundations milestone and review boundaries
 
-The initialization milestone adds packaging, an importable package, README,
-project guidance, and Git housekeeping only. Stop after validating it; do not
-begin PPO/MAPPO implementation or UAV task migration until the next assignment.
+Milestone 2 implements only Gaussian distributions, GAE/returns, and PPO loss
+functions, with deterministic numerical tests. Keep these modules directly under
+`uav_control/`. Do not add networks, adapters, training loops, MAPPO, configuration
+pipelines, checkpointing, evaluation, or migrate tasks during this milestone.
 
-Do not install dependencies, change Python/Conda environments or system settings,
-or run the official template generator during initialization. Use the template
-as a compatibility reference, not a required directory layout.
+Request approval before installing packages. Use an ignored repository-local
+`.venv` for CPU tests; never modify existing Python/Conda environments, CUDA,
+drivers, or system settings. Do not install simulators or run the official
+template generator for this milestone. Use the template as a compatibility
+reference, not a required directory layout.
+
+Document raw policy actions separately from executed actions. Keep GAE boundary
+semantics explicit and require final pre-reset values for optional truncation
+bootstrapping. Follow the documented skrl prediction-clipping value loss rather
+than importing the Hexapod implementation's maximum-of-two-errors convention.
+The public contracts and reference revisions are in `docs/ppo-core.md`.
+
+Implement this milestone on `feature/ppo-core`, created from clean `main`.
+Stop after implementation, verification, and reporting; leave changes uncommitted
+for review.
 
 Use the existing Git repository and remote. Do not create a nested repository,
 vendor Isaac Lab, or modify its installation. Leave commits, pushes, and pull

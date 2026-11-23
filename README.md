@@ -3,8 +3,12 @@
 Independent PyTorch PPO and MAPPO for quadcopter navigation and stable hovering
 under wind disturbances, using NVIDIA Isaac Lab for GPU-parallel simulation.
 
-**Status:** repository foundation only. Training algorithms, task migration, and
+**Status:** Gaussian action distributions, batched GAE, and PPO loss functions
+are implemented with numerical unit tests. Training loops, task migration, and
 simulator integration are not implemented or validated yet.
+
+See [PPO mathematical foundations](docs/ppo-core.md) for tensor interfaces,
+boundary semantics, and the skrl conventions used as references.
 
 ## Research objective
 
@@ -53,15 +57,16 @@ This repository is an external project and does not modify NVIDIA's framework.
 The official external-project template is a compatibility reference; this
 package uses a flat layout and a root-level `pyproject.toml`.
 
-The foundation declares no runtime dependencies. PyTorch and simulator
-requirements will be added deliberately when their components are implemented.
-An editable installation, when needed, uses:
+The mathematical modules require PyTorch 2.5.1. Install the appropriate PyTorch
+build first; CPU-only PyTorch is sufficient for the numerical tests. An editable
+installation with test dependencies, in a separately prepared environment, uses:
 
 ```console
-python -m pip install -e .
+python -m pip install -e ".[test]"
 ```
 
 This installs the package, not the Isaac stack. The build backend is setuptools.
+Run the numerical tests from the repository root with `python -m pytest -q`.
 From the repository root, a dependency-free source import check is:
 
 ```console
