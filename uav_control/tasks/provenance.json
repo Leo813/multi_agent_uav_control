@@ -1,0 +1,74 @@
+{
+  "fork_revision": "bdd31df85cc47e07715442cdc3fe0057c798fb35",
+  "official_reference": "isaac-sim/IsaacLab v2.1.0",
+  "references": {
+    "sarl": {
+      "url": "https://github.com/YuHaoTsai/IsaacLab/blob/bdd31df85cc47e07715442cdc3fe0057c798fb35/source/isaaclab_tasks/isaaclab_tasks/direct/quadcopter_MARL/quadcopter_SARL.py",
+      "git_blob": "f838b6de78335250323f049d1ac61c7a9f97e4b8"
+    },
+    "marl": {
+      "url": "https://github.com/YuHaoTsai/IsaacLab/blob/bdd31df85cc47e07715442cdc3fe0057c798fb35/source/isaaclab_tasks/isaaclab_tasks/direct/quadcopter_MARL/quadcopter_MARL.py",
+      "git_blob": "cca68159dfb68eb477b64f8c7fa18bcde6f46a02"
+    },
+    "forkmath": {
+      "url": "https://github.com/YuHaoTsai/IsaacLab/blob/bdd31df85cc47e07715442cdc3fe0057c798fb35/source/isaaclab/isaaclab/utils/math.py",
+      "git_blob": "1071c929ac01b5deddac0a1c23f7ce1325d6b7fe"
+    },
+    "rl": {
+      "url": "https://github.com/isaac-sim/IsaacLab/blob/v2.1.0/source/isaaclab/isaaclab/envs/direct_rl_env.py",
+      "git_blob": "b48e3db180334f4fd86a1440922e71e5db64a014"
+    },
+    "marlbase": {
+      "url": "https://github.com/isaac-sim/IsaacLab/blob/v2.1.0/source/isaaclab/isaaclab/envs/direct_marl_env.py",
+      "git_blob": "1a95f5b0e83fa063c465bbeccef7fe006b621e19"
+    },
+    "math": {
+      "url": "https://github.com/isaac-sim/IsaacLab/blob/v2.1.0/source/isaaclab/isaaclab/utils/math.py",
+      "git_blob": "ab83cb8d608d45750d15dfe7576f1dd75904d4a9"
+    },
+    "asset": {
+      "url": "https://github.com/isaac-sim/IsaacLab/blob/v2.1.0/source/isaaclab_assets/isaaclab_assets/robots/quadcopter.py",
+      "git_blob": "c27b052ad3587ae525905513f175d27dd9aa0794"
+    },
+    "license": {
+      "url": "https://github.com/YuHaoTsai/IsaacLab/blob/bdd31df85cc47e07715442cdc3fe0057c798fb35/LICENSE",
+      "git_blob": "b0f7751b6cefbf378deb145ecf858af2d749b687"
+    },
+    "app": {
+      "url": "https://github.com/isaac-sim/IsaacLab/blob/v2.1.0/source/isaaclab/isaaclab/app/app_launcher.py",
+      "git_blob": "fce2dac292b1ee854d33d349aa40dfb4a2c25e3c"
+    },
+    "register": {
+      "url": "https://github.com/isaac-sim/IsaacLab/blob/v2.1.0/source/isaaclab_tasks/isaaclab_tasks/direct/quadcopter/__init__.py",
+      "git_blob": "c7ca6680db6abab91014478aa725a545988e8108"
+    },
+    "articulation": {
+      "url": "https://github.com/isaac-sim/IsaacLab/blob/v2.1.0/source/isaaclab/isaaclab/assets/articulation/articulation.py",
+      "git_blob": "5203fa48ec879781f9945d9aae16b944b822f19c"
+    },
+    "artdata": {
+      "url": "https://github.com/isaac-sim/IsaacLab/blob/v2.1.0/source/isaaclab/isaaclab/assets/articulation/articulation_data.py",
+      "git_blob": "b42064e9da0a550c27dc6f5ff90f1c285bcccb7e"
+    },
+    "template": {
+      "url": "https://github.com/isaac-sim/IsaacLab/blob/v2.1.0/tools/template/templates/external/README.md",
+      "git_blob": "eeef1f3f87e87f6fc3ffffe43961b45cee9ca8e5"
+    },
+    "setup": {
+      "url": "https://github.com/isaac-sim/IsaacLab/blob/v2.1.0/source/isaaclab/setup.py",
+      "git_blob": "230c0e55a1a0d35925073c7c9f6b7c2f517b6720"
+    }
+  },
+  "original_class_fingerprints": {
+    "SARL": {
+      "QuadcopterEnvWindow": "dca3df249604425c07a3b2ac973def7618f2eb24b978f907982508722ed214f7",
+      "QuadcopterEnvCfgSARL": "c5a1bd218a0be2f8177ebf7b1fee89b0b98962713ab963c2c12f84ad30f55ea8",
+      "QuadcopterEnvSARL": "6210540769a8d9381108b08417b3ce0864c38ff7ba4f6bc5b4542413755f9fdb"
+    },
+    "MARL": {
+      "QuadcopterEnvWindowMARL": "37b38d79ff3ed9af5713c7d6084c5ed76cab955caa88694b29d6bd7b1e2dd917",
+      "QuadcopterEnvCfgMARL": "4b26c36b74b41efe6accdb1504d19b18c00bfcf0859806dfd8260c836f0a248b",
+      "QuadcopterEnvMARL": "2a26fff9ebae6c18b2f3f3087829c0b273e44fb71079376748f6111bd7975c19"
+    }
+  }
+}
