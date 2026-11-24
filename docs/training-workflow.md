@@ -164,6 +164,8 @@ normalizers, counters, episode meters, subsequent observations, reports, and RNG
 All 151 existing PPO/MAPPO tests remain regression requirements. Optional NumPy
 is absent and generates a PyTorch warning; no test needs it.
 
-No existing learning algorithm was changed. Real task migration, Isaac Lab
-adapters/launchers, native reset/final-state semantics, CUDA execution, Ubuntu,
-and UAV research performance remain unvalidated.
+No existing learning algorithm was changed. The results above describe Milestone 5.
+Milestone 6 adds task migration, native adapters, and a unified launcher; see
+[Isaac Lab integration](isaaclab-integration.md) for source-verified native
+contracts and stand-in verification. Native execution, CUDA, Ubuntu, and UAV
+research performance remain unvalidated.

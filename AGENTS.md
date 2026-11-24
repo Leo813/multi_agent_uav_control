@@ -92,54 +92,53 @@ corresponding execution has been tested. Report commands, results, and untested
 parts; keep documentation concise and focused on implemented functionality and
 the next milestone.
 
-## Current training-workflow milestone and review boundaries
+## Current Isaac Lab integration milestone and review boundaries
 
-Milestone 5 adds tensor environment contracts, persistent PPO/MAPPO collectors,
-bounded training, checkpoint/resume, and deterministic evaluation. Keep mock
-environments and the mock CLI under `dev/`, outside the installed learning package.
-Mocks verify workflow semantics; they do not model UAV physics or replace Isaac Lab.
+Milestone 6 migrates the two original UAV task files under `uav_control/tasks/`,
+with minimal local compatibility helpers, explicit registration, tensor adapters,
+and one native launcher implementation behind root `train_agent.py` and `uav-train`.
+Use branch `feature/isaaclab-integration` based on main merge `9096765`.
 
-Reuse existing learners without duplicating PPO/MAPPO calculations. Preserve all
-151 pre-workflow tests and independent Translation/Yaw learning signals. Actions
-sent to environments must be independent copies; retain raw samples for PPO.
-The adapter contract returns next-action-ready observations, with separate final
-pre-reset observations/states and validity masks for timeout bootstrapping.
-Never infer native Isaac Lab reset timing from the mock or from Isaac Gym.
+Preserve original task class names, configurations, rewards, observations, actions,
+wind, resets, visualization, and scenarios. Preserve `CRAZYFLIE_CFG.replace(...)`
+and rely on Isaac Lab asset resolution; do not vendor USD assets or patch NVIDIA
+framework sources. Source revisions and migration changes are recorded in
+`uav_control/tasks/provenance.json` and `docs/isaaclab-integration.md`.
 
-Track completed updates, vector steps, and system transitions (N per vector
-step, also for MAPPO). Checkpoint only at complete update boundaries. Distinguish
-restored learner state from exact interaction continuation, which additionally
-requires environment state, current observations, episode meters, and RNGs.
-Use versioned data-only checkpoints, explicit device mapping, and restricted
-loading for trusted local artifacts. Verify actual optimization/interaction state
-after resume. Evaluation must freeze weights, optimizers, and normalizers.
+Launch Isaac Sim using the official AppLauncher before importing task modules
+or registering tasks. Keep ordinary package imports simulator-free. SARL selects
+PPO; MARL selects Translation/Yaw MAPPO automatically. Reuse existing Trainer,
+collectors, checkpoint, resume, and evaluation implementations. Keep `dev/` mock
+workflow behavior unchanged and preserve all 188 pre-integration regression tests.
 
-Keep workflow modules flat under `uav_control/`. Do not implement the real Isaac
-Lab adapter/launcher, migrate tasks, add simulator dependencies, distributed
-training, mixed precision, or research experiments during this milestone.
+Isaac Lab 2.1.0 resets internally before returning observations. Do not add resets
+or physics steps in adapters. Native MARL resets when all agents terminate OR all
+agents time out; preserve separate rewards and boundaries. State concatenation
+is Translation then Yaw. Keep actions independently owned; raw Gaussian samples
+remain in learner storage and original tasks interpret execution actions.
 
-Request approval before installing packages. Use an ignored repository-local
-`.venv` for CPU tests; never modify existing Python/Conda environments, CUDA,
-drivers, or system settings. Do not install simulators or run the official
-template generator for this milestone. Use the template as a compatibility
-reference, not a required directory layout.
+Default timeout bootstrapping stays disabled. Reject requests/checkpoints that
+enable it because final pre-reset inputs are unavailable; never use post-reset
+states as terminal values. Native checkpoints resume learner state into a fresh
+environment, without claiming exact simulator trajectory continuation.
 
-Document raw policy actions separately from executed actions. Keep GAE boundary
-semantics explicit and require final pre-reset values for optional truncation
-bootstrapping. Follow the documented skrl prediction-clipping value loss rather
-than importing the Hexapod implementation's maximum-of-two-errors convention.
-The public contracts and reference revisions are in `docs/ppo-core.md`,
-`docs/ppo-learner.md`, `docs/mappo-learner.md`, and `docs/training-workflow.md`. Collect raw observations,
-centralized states, raw action samples, and individual raw rewards; the learner
-scales rewards once. Local-observation, centralized-state, and value normalizers
-stay frozen through collection and optimization, then update once for the next
-rollout. Prepared targets remain fixed; preserve the documented differences from skrl when changing
-normalization or minibatch behavior.
+Keep original PPO/MAPPO normalization and scaling contracts: collect raw inputs
+and individual raw rewards, scale once in the learner, freeze normalizers through
+collection/optimization, then update once for the next rollout. Existing public
+contracts remain in `docs/ppo-core.md`, `docs/ppo-learner.md`,
+`docs/mappo-learner.md`, and `docs/training-workflow.md`.
 
-Implement this milestone on `feature/training-workflow`, created from clean, updated `main`.
-Stop after implementation, verification, and reporting; leave changes uncommitted
-for review.
+Use the ignored local CPU `.venv` for numerical and native-interface stand-in tests.
+Mocks are software verification, not Isaac Lab execution. Native smoke tests,
+Crazyflie loading, CUDA training/evaluation, performance, and Ubuntu validation
+belong to Milestone 7. Do not run simulator experiments during Milestone 6.
 
-Use the existing Git repository and remote. Do not create a nested repository,
-vendor Isaac Lab, or modify its installation. Leave commits, pushes, and pull
-requests for explicit user authorization.
+Request approval before installing packages. Do not modify existing Python/Conda
+environments, simulator installations, CUDA, drivers, or system settings. For an
+already-prepared Isaac Lab installation, document no-dependency package installation
+and explicit prerequisite checks so the existing PyTorch/CUDA build is preserved.
+Do not run the template generator; retain the flat external package layout.
+
+Stop after implementation, verification, and reporting. Leave changes uncommitted
+for review. Use the existing repository and remote; no nested Git repository,
+automatic commit, push, pull request, merge, or project license selection.

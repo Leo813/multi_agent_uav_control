@@ -1,118 +1,121 @@
 # Multi-Agent UAV Control Project
 
-Independent PyTorch PPO and MAPPO for quadcopter navigation and stable hovering
-under wind disturbances, using NVIDIA Isaac Lab for GPU-parallel simulation.
+Independent PyTorch PPO and MAPPO for one quadcopter under wind disturbances.
+Isaac Lab supplies physics and GPU-parallel simulation; the project supplies
+the original UAV tasks, tensor adapters, learning algorithms, and training workflow.
 
-**Status:** Independent PPO and two-agent MAPPO support persistent rollout
-collection, bounded training, checkpoint/resume, and deterministic evaluation.
-CPU mock environments verify the workflow end to end. MAPPO retains separate
-Translation/Yaw actors and centralized critics. UAV task migration, Isaac Lab
-integration, CUDA execution, and research performance remain unvalidated.
+**Status:** Milestone 6 implements task migration and native launch orchestration.
+CPU numerical and stand-in integration tests pass. Native Isaac Lab execution,
+Crazyflie asset loading, CUDA training, Ubuntu, and research performance remain
+unverified. The next milestone is real simulator validation.
 
-See [PPO learner](docs/ppo-learner.md) and [MAPPO learner](docs/mappo-learner.md)
-for configuration, collection/update interfaces, normalization choices, and
-validation results. See [training workflow](docs/training-workflow.md) for the
-environment contract, checkpoint semantics, and mock verification. The underlying
-[PPO mathematical foundations](docs/ppo-core.md) specify action likelihoods,
-boundary semantics, and loss conventions.
+## Architecture
 
-## Research objective
+- `uav_control/tasks/`: original SARL/MARL task definitions and minimal compatibility helpers.
+- `uav_control/isaaclab_adapters.py`: native tensor interfaces and reset semantics.
+- `uav_control/`: simulator-independent PPO/MAPPO, collectors, checkpointing, and evaluation.
+- `train_agent.py`: unified native launcher; installed equivalent: `uav-train`.
+- `dev/`: CPU mock workflow for software verification.
 
-The project will compare two ways to control one quadcopter:
+| Selection | Learner | Local observations / actions | Gymnasium ID |
+| --- | --- | --- | --- |
+| SARL | PPO | 15 / 4 | `UAV-Control-Quadcopter-SARL-v0` |
+| MARL | MAPPO | Translation 21 / 4; Yaw 9 / 1 | `UAV-Control-Quadcopter-MARL-v0` |
 
-- **SARL / PPO:** one policy commands collective thrust and three control moments.
-- **MARL / MAPPO:** separate Translation and Yaw policies cooperate on the same
-  quadcopter, with centralized value estimation during training and decentralized
-  policy execution.
+MARL means two policies controlling **one quadcopter**. Separate critics receive
+the 30-dimensional Translation-then-Yaw state. Actors use only their assigned
+observations. Importing `uav_control` does not load a simulator.
 
-The original task definitions and skrl configurations in
-[YuHaoTsai/IsaacLab](https://github.com/YuHaoTsai/IsaacLab/tree/main/source/isaaclab_tasks/isaaclab_tasks/direct/quadcopter_MARL)
-are the starting references, especially `quadcopter_SARL.py` and
-`quadcopter_MARL.py`. The draft paper provides research context; new training and
-evaluation results will be generated for this implementation.
+## Prepared Isaac Lab environment
 
-## Intended architecture
+Initial target: **Windows 11, Python 3.10, Isaac Lab 2.1.0, Isaac Sim 4.5.0**,
+with the GPU driver and CUDA-enabled PyTorch build required by that installation.
+Ubuntu is a secondary target. Prepare the simulator separately using NVIDIA's
+[versioned installation guide](https://isaac-sim.github.io/IsaacLab/v2.1.0/source/setup/installation/pip_installation.html).
+This repository is an external package; it does not modify NVIDIA's framework.
 
-- **Learning:** simulator-independent PyTorch modules for configurable networks,
-  Gaussian policies, PPO/MAPPO updates, GAE, rollout storage, normalization, and
-  learning-rate schedules.
-- **Integration:** a small adapter for Isaac Lab's `DirectRLEnv` and
-  `DirectMARLEnv` tensor interfaces, including per-agent observations, centralized
-  critic inputs, termination, truncation, and reset behavior.
-- **Workflow:** training, checkpoint/resume, and evaluation procedures composed
-  around the learning modules and environment adapter.
+Both tasks retain `isaaclab_assets.CRAZYFLIE_CFG.replace(...)`. Isaac Lab resolves
+`{ISAAC_NUCLEUS_DIR}/Robots/Crazyflie/cf2x.usd`; that asset must be accessible
+in the prepared environment. No robot USD is bundled. Package availability alone
+does not establish that the asset is reachable or cached.
 
-Isaac Lab and Isaac Sim own physics and simulation parallelism. The learning
-code will not depend on skrl, RL-Games, or RSL-RL. Existing UAV task behavior will
-be preserved, with changes limited to necessary integration and runtime fixes.
+## Install this package
 
-This separation follows the broad approach in
-[hexapod_proj](https://github.com/Leo813/hexapod_proj/blob/main/docs/ppo-implementation.md),
-with interfaces and learning behavior designed for Isaac Lab and the UAV tasks.
-
-## Package and compatibility target
-
-- Distribution: `multi-agent-uav-control`; Python import: `uav_control`.
-- Python 3.10 or newer for the package foundation.
-- Initial simulation target: Isaac Lab 2.1.0, Isaac Sim 4.5.0, and Python 3.10.
-- Primary development platform: Windows 11; secondary target: Ubuntu.
-
-Install Isaac Lab and Isaac Sim separately when simulation work begins, following
-the [versioned installation guide](https://isaac-sim.github.io/IsaacLab/v2.1.0/source/setup/installation/pip_installation.html).
-This repository is an external project and does not modify NVIDIA's framework.
-The official external-project template is a compatibility reference; this
-package uses a flat layout and a root-level `pyproject.toml`.
-
-The learning modules require PyTorch 2.5.1. Install the appropriate PyTorch
-build first; CPU-only PyTorch is sufficient for the numerical tests. An editable
-installation with test dependencies, in a separately prepared environment, uses:
+Use the **Python interpreter prepared for Isaac Lab**, not the repository's CPU
+test `.venv`. From the repository root, inspect prerequisites before installing:
 
 ```console
-python -m pip install -e ".[test]"
+python -c "import sys, torch, numpy, gymnasium; from importlib.metadata import version; print(sys.version); print('Isaac Lab', version('isaaclab')); print('torch', torch.__version__, 'CUDA build', torch.version.cuda, 'available', torch.cuda.is_available()); print('NumPy', numpy.__version__, 'Gymnasium', gymnasium.__version__); print('setuptools', version('setuptools'), 'wheel', version('wheel'))"
+python -m pip install --no-deps --no-build-isolation -e .
 ```
 
-This installs the package, not the Isaac stack. The build backend is setuptools.
-Run the numerical tests from the repository root with `python -m pytest -q`.
-From the repository root, a dependency-free source import check is:
+Check Python 3.10, Isaac Lab 2.1.0, PyTorch 2.5.1 with the prepared CUDA build,
+NumPy <2, Gymnasium, and existing setuptools >=64 / wheel. Confirm Isaac Sim
+4.5.0 in the simulator installation as well. The tasks need NumPy; pandas,
+matplotlib, and SciPy are not required by the migrated task code.
+
+The PyTorch pin matches Isaac Lab 2.1.0's own requirement. `--no-deps` prevents
+pip from replacing the prepared PyTorch/CUDA stack; it also skips all dependency
+installation and validation. `--no-build-isolation` uses existing build tools.
+Resolve missing prerequisites separately before installation. These installation
+commands are documented for the prepared environment and have **not been executed
+there**. Wheel and source-package builds were checked without installing packages.
+
+For a binary Isaac Lab setup, invoke its Python through the external checkout:
+`C:\path\to\IsaacLab\isaaclab.bat -p train_agent.py ...` on Windows, or
+`/path/to/IsaacLab/isaaclab.sh -p train_agent.py ...` on Ubuntu. Use that same
+`-p -m pip ...` interpreter for installation. In an activated compatible Python
+environment, the `python` commands below are sufficient.
+
+## Native training and evaluation
+
+These are **target commands, not runtime-verified simulator runs**:
 
 ```console
-python -B -c "import uav_control; print(uav_control.__file__)"
+python train_agent.py --task SARL --headless --num_envs 64 --updates 10 --checkpoint-out outputs/sarl.pt
+python train_agent.py --task MARL --headless --num_envs 64 --updates 10 --checkpoint-out outputs/marl.pt
+python train_agent.py --task MARL --headless --num_envs 64 --updates 10 --checkpoint outputs/marl.pt --checkpoint-out outputs/marl-resumed.pt
+python train_agent.py --task MARL --mode evaluate --checkpoint outputs/marl.pt --num_envs 64 --eval-steps 1000 --headless
 ```
 
-## Development sequence
+`--task` selects the environment, adapter, learner, and existing research defaults.
+`--updates` counts additional complete updates. `--seed` defaults to 0.
+Omitting `--num_envs` preserves the original task's 4096 environments.
+Official AppLauncher options, including `--device cuda:0`, are also available.
 
-1. Establish the package foundation.
-2. Implement and numerically verify independent PPO components.
-3. Compose and verify the single-agent PPO learner.
-4. Extend to two-policy MAPPO with centralized value estimation.
-5. Verify training and evaluation with lightweight vectorized mock environments (current milestone).
-6. Integrate the existing UAV tasks through minimal compatibility code.
-7. Run real Isaac Lab simulation, CUDA training, and evaluation.
-8. Review task refinements and experimental procedures.
+After installation, use `uav-train` with the same arguments from any directory.
+It invokes the same implementation as `train_agent.py`; task imports and
+registration occur after AppLauncher initializes Isaac Sim. Relative checkpoint
+paths resolve from the current directory. Use trusted project checkpoints.
 
-Static checks, deterministic numerical tests, and mock-environment tests precede
-simulator testing. Passing software tests is not evidence of simulation
-compatibility or research performance. See [AGENTS.md](AGENTS.md) for development
-constraints and verification expectations.
+Resume restores learner state, counters, and RNGs into a fresh native environment;
+it does not restore simulator trajectories. CUDA resume requires saved CUDA RNG
+states matching the available device count; CPU mock checkpoints cannot directly
+resume CUDA training under the current workflow. Evaluation uses frozen actors.
+Time-limit bootstrapping is disabled; incompatible checkpoints are rejected
+because native step outputs lack final pre-reset observations/states.
 
-License selection is pending review.
+Legacy CSV logging is off by default. To opt in, specify
+`--legacy-telemetry-dir outputs/legacy`. It is synchronous diagnostic output,
+with Windows-safe filenames; it is not a validated research data export.
 
 ## Mock workflow verification
 
-These CPU commands run from the repository root using the existing `.venv`.
-They are **not Isaac Lab UAV training commands**. Use `--help` for options.
+These commands use the existing CPU test `.venv` and run no simulator:
 
 ```powershell
+.venv\Scripts\python.exe -B -m pytest -q
 .venv\Scripts\python.exe -m dev.mock_workflow --algorithm ppo --num-envs 4 --updates 2 --checkpoint outputs/mock/ppo.pt
 .venv\Scripts\python.exe -m dev.mock_workflow --algorithm ppo --num-envs 4 --updates 1 --resume outputs/mock/ppo.pt --exact-resume
-.venv\Scripts\python.exe -m dev.mock_workflow --algorithm ppo --evaluate --resume outputs/mock/ppo.pt --eval-steps 20
 .venv\Scripts\python.exe -m dev.mock_workflow --algorithm mappo --num-envs 4 --updates 2 --checkpoint outputs/mock/mappo.pt
 .venv\Scripts\python.exe -m dev.mock_workflow --algorithm mappo --evaluate --resume outputs/mock/mappo.pt --eval-steps 20
 ```
 
-`--updates` adds complete updates. Output reports vector steps and transitions;
-one vector step with N environments is N transitions, including MAPPO.
-`--exact-resume` restores mock interaction state and requires matching environment
-configuration. Without it, a restored learner starts a fresh environment while
-retaining training counters. Load only trusted project-generated checkpoints.
-Generated outputs are ignored by Git; `dev/` is not an installed simulation dependency.
+See [integration contracts and verification](docs/isaaclab-integration.md),
+[training workflow](docs/training-workflow.md), [PPO learner](docs/ppo-learner.md),
+[MAPPO learner](docs/mappo-learner.md), and [numerical foundations](docs/ppo-core.md).
+The draft paper supplies research context; new performance claims require new
+experiments. [AGENTS.md](AGENTS.md) records development boundaries.
+
+Project license selection remains pending. Migrated NVIDIA-derived sources
+retain their notices and [upstream BSD-3-Clause terms](uav_control/tasks/LICENSE.isaaclab).

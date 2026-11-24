@@ -21,6 +21,9 @@ classifiers = [
 [project.optional-dependencies]
 test = ["pytest>=8,<9"]
 
+[project.scripts]
+uav-train = "uav_control.launcher:main"
+
 [project.urls]
 Repository = "https://github.com/Leo813/multi_agent_uav_control"
 
@@ -28,6 +31,9 @@ Repository = "https://github.com/Leo813/multi_agent_uav_control"
 where = ["."]
 include = ["uav_control", "uav_control.*"]
 namespaces = false
+
+[tool.setuptools.package-data]
+"uav_control.tasks" = ["LICENSE.isaaclab", "provenance.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
