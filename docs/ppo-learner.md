@@ -172,17 +172,14 @@ separation of learner, collector, adapter, and lifecycle through `src/hexapod_rl
 `train_agent.py`, and `docs/ppo-implementation.md`. Its Isaac Gym interfaces,
 RL-Games objective, hyperparameters, and timeout conventions were not adopted.
 
-## Verification and deferred integration
+## Verification
 
-On Windows, Python 3.10.11 / PyTorch 2.5.1+cpu / pytest 8.4.2:
-the Milestone 3 baseline passed **127 tests** (70 mathematical-foundation tests,
-57 learner tests). Run `.venv\Scripts\python.exe -B -m pytest -q` for the full
-current suite, including [MAPPO checks](mappo-learner.md#verification-and-remaining-integration).
+Run `python -m pytest -q` in the prepared CPU test environment for the full suite,
+including [MAPPO checks](mappo-learner.md#verification).
 PPO tests include analytic gradients, a hand-calculated first Adam step,
 known running moments and GAE targets, clipping-center regression, zero-update
 behavior, detached storage/targets, minibatch coverage, schedule boundaries, and
 synthetic consecutive rollouts with normalization/shuffling enabled or disabled.
-PyTorch emits one warning because optional NumPy is absent; no test uses NumPy.
 
 Network configuration, distributions, GAE/loss functions, owned storage,
 normalizers, and the schedule are reused by the [MAPPO learner](mappo-learner.md).
@@ -191,8 +188,8 @@ configuration now also supports explicit centralized critic dimensions and
 independent critic widths when `shared=False`. PPO and MAPPO call the same target
 preparation and optimization helpers; the mathematical functions are unchanged.
 
-The [training workflow](training-workflow.md) adds collection, lifecycle,
-checkpoint/resume, and evaluation verified with CPU mocks. Deferred: verify
-Isaac Lab 2.1.0 action transformations, reset timing and final observations;
-implement the adapter and preserve original UAV tasks. CUDA, Isaac Lab/Sim,
+The [training workflow](training-workflow.md) supplies collection, lifecycle,
+checkpoint/resume, and evaluation verified with CPU mocks. The
+[Isaac Lab integration](isaaclab-integration.md) documents the implemented task
+adapters and source-level reset/action contracts. CUDA, Isaac Lab/Sim execution,
 Ubuntu, and research performance remain untested.

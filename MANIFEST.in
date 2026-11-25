@@ -1,5 +1,5 @@
 include train_agent.py
-include AGENTS.md
+exclude AGENTS.md
 recursive-include docs *.md
 recursive-include tests *.py
 recursive-include dev *.py
