@@ -37,7 +37,7 @@ last (action) axis. Batch axes are retained, including singleton batches.
 
 Sampling returns detached actions; deterministic selection returns an owned,
 detached copy of the mean. Log-probability evaluation treats supplied actions as
-fixed samples, while retaining gradients through the mean and log_std. Future
+fixed samples, while retaining gradients through the mean and log_std. The
 collectors must store raw samples and their old log probabilities before passing
 a separate action tensor through any environment clipping or transformation.
 
@@ -76,10 +76,10 @@ inputs raise an error; termination takes precedence if both flags are true.
 Unused entries in bootstrap tensors may be NaN. `gamma=0` needs no bootstrap.
 Do not apply a separate timeout reward correction before calling this function.
 
-This contract makes no assumptions about Isaac Lab autoreset behavior. A future
-adapter must obtain final values correctly or leave timeout bootstrapping
-disabled, as in the reference configurations. No Isaac Gym reset conventions
-are inherited.
+This mathematical contract makes no assumptions about simulator autoreset
+behavior. The [native adapters](isaaclab-integration.md#adapter-and-episode-boundary-contracts)
+leave timeout bootstrapping disabled because final pre-reset inputs are unavailable.
+No Isaac Gym reset conventions are inherited.
 
 ## PPO losses
 

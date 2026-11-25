@@ -73,7 +73,8 @@ and critic parameters, joint loss/backward, and combined gradient norm clipping,
 matching skrl's optimizer organization. Optimizers, schedules, rewards, and
 advantages are independent across agents. Returned diagnostics are keyed by
 agent; each contains losses, KL, clip fraction, gradient norm, next LR, steps,
-and unique sample count. No checkpointing, logging, or environment loop is added.
+and unique sample count. Checkpointing, logging, and environment loops belong to
+the separate [training workflow](training-workflow.md).
 
 ## Storage and normalization contract
 
@@ -123,7 +124,7 @@ The task returns distinct rewards. Its `possible_agents` order is Translation,
 Yaw; `state_space=-1` yields the 30-dimensional concatenation under
 [Isaac Lab 2.1.0 DirectMARLEnv.state()](https://github.com/isaac-sim/IsaacLab/blob/v2.1.0/source/isaaclab/isaaclab/envs/direct_marl_env.py)
 (blob `1a95f5b0e83fa063c465bbeccef7fe006b621e19`). The learner accepts an explicit
-state tensor; the future adapter must supply it in that order.
+state tensor; the native adapter supplies it in that order.
 
 [skrl 1.4.2 MAPPO](https://github.com/Toni-SM/skrl/blob/1.4.2/skrl/multi_agents/torch/mappo/mappo.py)
 (blob `2cf0a78ca52967c8bbe48782aabb1a1bdf76eaec`) is the chosen behavior reference,
@@ -140,27 +141,26 @@ No reward correction using pre-action values is applied. Clipping is controlled
 by each agent's `value_clip`, including `None` to disable it; no KL early stopping,
 mixed precision, or distributed execution is implemented.
 
-## Verification and remaining integration
+## Verification
 
-The Milestone 4 baseline passed **151 tests** on Windows:
-127 existing PPO regressions and 24 new MAPPO tests. Numerical checks cover
+Numerical checks cover
 different agent dimensions/rewards/boundaries, decentralized execution,
 actor/critic gradient isolation, analytic Gaussian likelihoods and Adam steps,
 normalization snapshots, atomic storage/preparation, minibatch alignment,
-independent updates, and consecutive synthetic MAPPO updates. Existing PPO
-tests remain regression requirements. The CPU environment is Python 3.10.11,
-PyTorch 2.5.1+cpu, pytest 8.4.2. PyTorch emits one warning about absent optional
-NumPy; no test requires it. No dependencies were installed.
+independent updates, and consecutive synthetic MAPPO updates. Run
+`python -m pytest -q` in the prepared CPU test environment for the full suite,
+including PPO regressions.
 
-A future Isaac Lab adapter must supply aligned local observations and centralized
-states at the **same pre-action timestep**, preserve per-agent rewards and flags,
-and return per-agent next values in scaled-reward units. Continuing transitions
+Adapters must supply aligned local observations and centralized states for the
+**same pre-action timestep** and preserve per-agent rewards and flags. Collectors
+compute per-agent next values in scaled-reward units. Continuing transitions
 need `next_values`, including the final rollout row. Optional truncation
 bootstrapping needs each critic evaluated on the final centralized state before
 reset; post-reset values are invalid. Termination overrides truncation. Keep
 bootstrapping disabled if final states are unavailable. See [GAE](ppo-core.md#gae-and-episode-boundaries).
 
-The [training workflow](training-workflow.md) now supplies collection/lifecycle,
-persistence, and evaluation verified against CPU mocks. Task migration, real
-autoreset/final-state extraction, and execution transforms remain deferred.
-CUDA, Ubuntu, Isaac Lab/Sim execution, and research performance remain untested.
+The [training workflow](training-workflow.md) supplies collection/lifecycle,
+persistence, and evaluation verified against CPU mocks. See
+[Isaac Lab integration](isaaclab-integration.md) for native adapters, task
+limitations, and disabled native timeout bootstrapping. CUDA, Ubuntu,
+Isaac Lab/Sim execution, and research performance remain untested.

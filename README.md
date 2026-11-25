@@ -4,10 +4,11 @@ Independent PyTorch PPO and MAPPO for one quadcopter under wind disturbances.
 Isaac Lab supplies physics and GPU-parallel simulation; the project supplies
 the original UAV tasks, tensor adapters, learning algorithms, and training workflow.
 
-**Status:** Milestone 6 implements task migration and native launch orchestration.
-CPU numerical and stand-in integration tests pass. Native Isaac Lab execution,
-Crazyflie asset loading, CUDA training, Ubuntu, and research performance remain
-unverified. The next milestone is real simulator validation.
+**Validation status:** CPU numerical and native-interface stand-in tests pass.
+Native Isaac Lab execution, Crazyflie asset loading, CUDA training, Ubuntu, and
+research performance remain unverified. See the
+[integration limitations](docs/isaaclab-integration.md#limitations-and-validation)
+before interpreting training results.
 
 ## Architecture
 
@@ -41,8 +42,9 @@ does not establish that the asset is reachable or cached.
 
 ## Install this package
 
-Use the **Python interpreter prepared for Isaac Lab**, not the repository's CPU
-test `.venv`. From the repository root, inspect prerequisites before installing:
+Activate your existing compatible Isaac Lab Conda environment and use its Python
+interpreter, not the repository's CPU test `.venv`. From the repository root,
+inspect prerequisites before installing:
 
 ```console
 python -c "import sys, torch, numpy, gymnasium; from importlib.metadata import version; print(sys.version); print('Isaac Lab', version('isaaclab')); print('torch', torch.__version__, 'CUDA build', torch.version.cuda, 'available', torch.cuda.is_available()); print('NumPy', numpy.__version__, 'Gymnasium', gymnasium.__version__); print('setuptools', version('setuptools'), 'wheel', version('wheel'))"
@@ -58,8 +60,7 @@ The PyTorch pin matches Isaac Lab 2.1.0's own requirement. `--no-deps` prevents
 pip from replacing the prepared PyTorch/CUDA stack; it also skips all dependency
 installation and validation. `--no-build-isolation` uses existing build tools.
 Resolve missing prerequisites separately before installation. These installation
-commands are documented for the prepared environment and have **not been executed
-there**. Wheel and source-package builds were checked without installing packages.
+commands have **not been verified in a native Isaac Lab environment**.
 
 For a binary Isaac Lab setup, invoke its Python through the external checkout:
 `C:\path\to\IsaacLab\isaaclab.bat -p train_agent.py ...` on Windows, or
@@ -111,11 +112,16 @@ These commands use the existing CPU test `.venv` and run no simulator:
 .venv\Scripts\python.exe -m dev.mock_workflow --algorithm mappo --evaluate --resume outputs/mock/mappo.pt --eval-steps 20
 ```
 
-See [integration contracts and verification](docs/isaaclab-integration.md),
+## Technical documentation and research sources
+
+See [Isaac Lab integration](docs/isaaclab-integration.md),
 [training workflow](docs/training-workflow.md), [PPO learner](docs/ppo-learner.md),
 [MAPPO learner](docs/mappo-learner.md), and [numerical foundations](docs/ppo-core.md).
-The draft paper supplies research context; new performance claims require new
-experiments. [AGENTS.md](AGENTS.md) records development boundaries.
+The UAV task definitions originate from
+[YuHaoTsai/IsaacLab](https://github.com/YuHaoTsai/IsaacLab/tree/bdd31df85cc47e07715442cdc3fe0057c798fb35/source/isaaclab_tasks/isaaclab_tasks/direct/quadcopter_MARL).
+[Source provenance](uav_control/tasks/provenance.json) records the revisions and
+preservation fingerprints. The draft paper supplies research context; new
+performance claims require experiments with this implementation.
 
 Project license selection remains pending. Migrated NVIDIA-derived sources
 retain their notices and [upstream BSD-3-Clause terms](uav_control/tasks/LICENSE.isaaclab).

@@ -1,10 +1,9 @@
 # PPO/MAPPO training workflow
 
-This milestone composes the existing learners with tensor environment interfaces,
+The workflow composes the learners with tensor environment interfaces,
 persistent collectors, bounded training, checkpoint/resume, and evaluation. The
 CPU fixtures under `dev/` verify software behavior; they implement no UAV physics.
-Core modules import neither Gymnasium nor Isaac Lab/Sim. Dependencies and learning
-algorithms are unchanged.
+Core modules import neither Gymnasium nor Isaac Lab/Sim.
 
 ## Environment and collector contract
 
@@ -20,7 +19,7 @@ device; flags and validity masks are boolean. Empty/misaligned data are rejected
 
 For MAPPO, local observation/action dimensions default to 21/4 and 9/1, shared
 states to [N,30]. States are supplied explicitly; workflow code never reconstructs
-arbitrary global state. The future UAV adapter supplies Translation-then-Yaw
+arbitrary global state. The native UAV adapter supplies Translation-then-Yaw
 state order. Both agents remain present in every row. Rewards and boundaries are
 preserved independently, and centralized critics never supply actor inputs.
 
@@ -128,8 +127,8 @@ snapshot/device/environment and restores it without another reset. Restored
 observations must equal the saved interaction snapshot. Exact continuation is
 verified for CPU mocks at successful update boundaries, with no pending rollout
 or batch. There is no mid-update recovery or automatic rollback after failures.
-Future Isaac Lab simulator/RNG restoration needs independent implementation and
-validation. Cross-device loading is explicit; exact cross-device continuation is
+Native Isaac Lab checkpoints omit interaction snapshots and resume into a fresh
+environment. Cross-device loading is explicit; exact cross-device continuation is
 rejected. CUDA resume requires matching CUDA RNG state/device count and remains
 untested.
 
@@ -153,19 +152,13 @@ does not install packages or initialize a simulator.
 
 ## Verification boundary
 
-The complete suite runs with `.venv\Scripts\python.exe -B -m pytest -q` on Windows,
-Python 3.10.11, torch 2.5.1+cpu, pytest 8.4.2: **188 tests passed**, including all
-151 existing tests and 37 new workflow tests. Tests cover action/input ownership,
+Run `python -m pytest -q` in the prepared CPU test environment, or
+`.venv\Scripts\python.exe -B -m pytest -q` on Windows. Tests cover action/input ownership,
 persistent collection, individual boundaries/rewards, required final states,
 analytic timeout values, normalization, successive updates, checkpoint round
 trips/rejection, exact resume, frozen deterministic evaluation, and both CLI
 workflows. Resume checks compare actual model parameters, Adam moments/LRs,
 normalizers, counters, episode meters, subsequent observations, reports, and RNGs.
-All 151 existing PPO/MAPPO tests remain regression requirements. Optional NumPy
-is absent and generates a PyTorch warning; no test needs it.
-
-No existing learning algorithm was changed. The results above describe Milestone 5.
-Milestone 6 adds task migration, native adapters, and a unified launcher; see
-[Isaac Lab integration](isaaclab-integration.md) for source-verified native
+See [Isaac Lab integration](isaaclab-integration.md) for source-inspected native
 contracts and stand-in verification. Native execution, CUDA, Ubuntu, and UAV
 research performance remain unvalidated.
